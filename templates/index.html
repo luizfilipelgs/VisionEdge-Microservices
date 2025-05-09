@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Visão Computacional</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a237e;
+            --primary-light: #534bae;
+            --primary-dark: #000051;
+            --secondary-color: #0d47a1;
+            --accent-color: #2962ff;
+            --success-color: #00c853;
+            --warning-color: #ffd600;
+            --danger-color: #d50000;
+            --light-color: #f5f5f5;
+            --dark-color: #212121;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            z-index: 1;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.8rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            margin: 15px 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background-color: var(--gray-900);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            aspect-ratio: 16/9;
+        }
+
+        .video-container.expanded {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            border-radius: 0;
+        }
+
+        .video-container.expanded video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .controls {
+            background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--gray-300);
+        }
+
+        .form-control {
+            background-color: white;
+            border: 2px solid var(--gray-300);
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: var(--gray-900);
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(41, 98, 255, 0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #b71c1c);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #b71c1c, var(--danger-color));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .business-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .business-option {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid var(--gray-300);
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .business-option:hover {
+            background: linear-gradient(135deg, var(--gray-200), var(--gray-300));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .business-option.active {
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, white, var(--gray-100));
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+            border: 1px solid var(--gray-200);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card i {
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-label {
+            font-size: 1.1rem;
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--gray-300);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, var(--success-color), #00a844);
+            color: white;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, var(--danger-color), #b71c1c);
+            color: white;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, var(--warning-color), #ffc107);
+            color: var(--gray-900);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--gray-800);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 0;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .metrics-container {
+                grid-template-columns: 1fr;
+            }
+
+            .business-option {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sistema de Visão Computacional</h1>
+            <p>Análise de vídeo em tempo real com detecção de objetos</p>
+        </div>
+
+        <div class="alert alert-success" role="alert"></div>
+        <div class="alert alert-danger" role="alert"></div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="video-container">
+                    <img id="videoStream" src="{{ url_for('video_feed') }}" alt="Video Stream">
+                    <div class="stream-status inactive">Stream Inativo</div>
+                    <div class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="controls mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="streamUrl" class="form-label">URL do Stream</label>
+                                <input type="text" class="form-control" id="streamUrl" placeholder="rtsp://...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="businessType" class="form-label">Tipo de Negócio</label>
+                                <select class="form-control" id="businessType">
+                                    <option value="supermarket">Supermercado</option>
+                                    <option value="pharmacy">Farmácia</option>
+                                    <option value="condominium">Condomínio</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-primary w-100" onclick="startDetection()">
+                                <i class="fas fa-play"></i> Iniciar Detecção
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-danger w-100" onclick="stopDetection()">
+                                <i class="fas fa-stop"></i> Parar Detecção
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="file-upload mt-3">
+                        <label class="file-upload-label">
+                            <i class="fas fa-upload"></i> Upload de Vídeo
+                            <input type="file" id="videoFile" accept="video/*">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="recommendations">
+                    <h3>Recomendações</h3>
+                    <div id="recommendationsList"></div>
+                </div>
+
+                <div class="metrics-container">
+                    <!-- Métricas para Supermercado -->
+                    <div class="metric-card" data-business="supermarket">
+                        <i class="fas fa-users"></i>
+                        <div class="metric-value" id="personCount">0</div>
+                        <div class="metric-label">Pessoas</div>
+                    </div>
+                    <div class="metric-card" data-business="supermarket">
+                        <i class="fas fa-clock"></i>
+                        <div class="metric-value" id="averageTime">0s</div>
+                        <div class="metric-label">Tempo Médio</div>
+                    </div>
+                    <div class="metric-card" data-business="supermarket">
+                        <i class="fas fa-shopping-cart"></i>
+                        <div class="metric-value" id="cartCount">0</div>
+                        <div class="metric-label">Carrinhos</div>
+                    </div>
+                    <div class="metric-card" data-business="supermarket">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="metric-value" id="occupancyRate">0%</div>
+                        <div class="metric-label">Taxa de Ocupação</div>
+                    </div>
+
+                    <!-- Métricas para Farmácia -->
+                    <div class="metric-card" data-business="pharmacy">
+                        <i class="fas fa-users"></i>
+                        <div class="metric-value" id="pharmacyPersonCount">0</div>
+                        <div class="metric-label">Pessoas</div>
+                    </div>
+                    <div class="metric-card" data-business="pharmacy">
+                        <i class="fas fa-clock"></i>
+                        <div class="metric-value" id="pharmacyWaitTime">0s</div>
+                        <div class="metric-label">Tempo de Espera</div>
+                    </div>
+                    <div class="metric-card" data-business="pharmacy">
+                        <i class="fas fa-procedures"></i>
+                        <div class="metric-value" id="pharmacyQueueLength">0</div>
+                        <div class="metric-label">Tamanho da Fila</div>
+                    </div>
+                    <div class="metric-card" data-business="pharmacy">
+                        <i class="fas fa-user-md"></i>
+                        <div class="metric-value" id="pharmacyStaffCount">0</div>
+                        <div class="metric-label">Atendentes</div>
+                    </div>
+
+                    <!-- Métricas para Condomínio -->
+                    <div class="metric-card" data-business="condominium">
+                        <i class="fas fa-users"></i>
+                        <div class="metric-value" id="condoPersonCount">0</div>
+                        <div class="metric-label">Pessoas</div>
+                    </div>
+                    <div class="metric-card" data-business="condominium">
+                        <i class="fas fa-car"></i>
+                        <div class="metric-value" id="condoVehicleCount">0</div>
+                        <div class="metric-label">Veículos</div>
+                    </div>
+                    <div class="metric-card" data-business="condominium">
+                        <i class="fas fa-door-open"></i>
+                        <div class="metric-value" id="condoEntranceCount">0</div>
+                        <div class="metric-label">Entradas</div>
+                    </div>
+                    <div class="metric-card" data-business="condominium">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="metric-value" id="condoSecurityAlerts">0</div>
+                        <div class="metric-label">Alertas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let isStreamActive = false;
+        let updateInterval;
+
+        function showAlert(message, type) {
+            const alert = document.querySelector(`.alert-${type}`);
+            alert.textContent = message;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateStreamStatus(active) {
+            const status = document.querySelector('.stream-status');
+            if (active) {
+                status.textContent = 'Stream Ativo';
+                status.classList.remove('inactive');
+                status.classList.add('active');
+            } else {
+                status.textContent = 'Stream Inativo';
+                status.classList.remove('active');
+                status.classList.add('inactive');
+            }
+            isStreamActive = active;
+        }
+
+        function startDetection() {
+            const streamUrl = document.getElementById('streamUrl').value;
+            const businessType = document.getElementById('businessType').value;
+
+            if (!streamUrl) {
+                showAlert('Por favor, insira a URL do stream', 'danger');
+                return;
+            }
+
+            document.querySelector('.loading-overlay').style.display = 'flex';
+
+            fetch('/start_detection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    source: streamUrl,
+                    business_type: businessType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else {
+                    showAlert('Detecção iniciada com sucesso', 'success');
+                    updateStreamStatus(true);
+                    startMetricsUpdate();
+                }
+            })
+            .catch(error => {
+                showAlert('Erro ao iniciar detecção: ' + error, 'danger');
+            })
+            .finally(() => {
+                document.querySelector('.loading-overlay').style.display = 'none';
+            });
+        }
+
+        function stopDetection() {
+            if (!isStreamActive) return;
+
+            document.querySelector('.loading-overlay').style.display = 'flex';
+
+            fetch('/stop_detection', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else {
+                    showAlert('Detecção parada com sucesso', 'success');
+                    updateStreamStatus(false);
+                    stopMetricsUpdate();
+                }
+            })
+            .catch(error => {
+                showAlert('Erro ao parar detecção: ' + error, 'danger');
+            })
+            .finally(() => {
+                document.querySelector('.loading-overlay').style.display = 'none';
+            });
+        }
+
+        function startMetricsUpdate() {
+            updateInterval = setInterval(updateMetrics, 1000);
+        }
+
+        function stopMetricsUpdate() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        }
+
+        function updateMetrics() {
+            const businessType = document.getElementById('businessType').value;
+            
+            // Esconde todas as métricas primeiro
+            document.querySelectorAll('.metric-card').forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            // Mostra apenas as métricas do tipo de negócio selecionado
+            document.querySelectorAll(`.metric-card[data-business="${businessType}"]`).forEach(card => {
+                card.style.display = 'flex';
+            });
+
+            fetch('/get_insights')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                    return;
+                }
+
+                // Atualiza métricas baseado no tipo de negócio
+                const metrics = data.metrics;
+                
+                switch(businessType) {
+                    case 'supermarket':
+                        document.getElementById('personCount').textContent = metrics.person_count || 0;
+                        document.getElementById('averageTime').textContent = 
+                            Math.round(metrics.average_stay_time || 0) + 's';
+                        document.getElementById('cartCount').textContent = metrics.cart_count || 0;
+                        document.getElementById('occupancyRate').textContent = 
+                            Math.round(metrics.occupancy_rate || 0) + '%';
+                        break;
+                        
+                    case 'pharmacy':
+                        document.getElementById('pharmacyPersonCount').textContent = metrics.person_count || 0;
+                        document.getElementById('pharmacyWaitTime').textContent = 
+                            Math.round(metrics.average_wait_time || 0) + 's';
+                        document.getElementById('pharmacyQueueLength').textContent = metrics.queue_length || 0;
+                        document.getElementById('pharmacyStaffCount').textContent = metrics.staff_count || 0;
+                        break;
+                        
+                    case 'condominium':
+                        document.getElementById('condoPersonCount').textContent = metrics.person_count || 0;
+                        document.getElementById('condoVehicleCount').textContent = metrics.vehicle_count || 0;
+                        document.getElementById('condoEntranceCount').textContent = metrics.entrance_count || 0;
+                        document.getElementById('condoSecurityAlerts').textContent = metrics.security_alerts || 0;
+                        break;
+                }
+
+                // Atualiza recomendações
+                const recommendationsList = document.getElementById('recommendationsList');
+                recommendationsList.innerHTML = '';
+                if (data.recommendations && data.recommendations.length > 0) {
+                    data.recommendations.forEach(rec => {
+                        const div = document.createElement('div');
+                        div.className = 'recommendation-item';
+                        div.textContent = rec;
+                        recommendationsList.appendChild(div);
+                    });
+                } else {
+                    recommendationsList.innerHTML = '<p class="text-muted">Nenhuma recomendação disponível no momento.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar métricas:', error);
+            });
+        }
+
+        // Adiciona listener para mudança de tipo de negócio
+        document.getElementById('businessType').addEventListener('change', function() {
+            updateMetrics();
+        });
+
+        // Upload de arquivo
+        document.getElementById('videoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            document.querySelector('.loading-overlay').style.display = 'flex';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else {
+                    showAlert('Arquivo enviado com sucesso', 'success');
+                    // Inicia detecção no arquivo
+                    startDetection(data.filename);
+                }
+            })
+            .catch(error => {
+                showAlert('Erro no upload: ' + error, 'danger');
+            })
+            .finally(() => {
+                document.querySelector('.loading-overlay').style.display = 'none';
+            });
+        });
+
+        // Expansão do vídeo
+        document.querySelector('.video-container').addEventListener('click', function() {
+            this.classList.toggle('expanded');
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStreamStatus(false);
+        });
+    </script>
+</body>
+</html> 
