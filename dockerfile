@@ -1,16 +1,20 @@
-# Imagem base leve e compatível
-FROM python:3.11-slim
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 # Define diretório de trabalho
 WORKDIR /app
 
-# Copia tudo para dentro do container
-COPY . .
-
-# Instala dependências de sistema necessárias
+# Instala Python e dependências básicas
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    python3.10 python3.10-venv python3-pip \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1 \
     && rm -rf /var/lib/apt/lists/*
+
+# Define aliases
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+# Copia o projeto
+COPY . .
 
 # Instala dependências Python
 RUN pip install --no-cache-dir --upgrade pip \
