@@ -56,15 +56,55 @@ Sistema avançado de análise de vídeo em tempo real com detecção de objetos 
 - Sistema operacional: Windows 10/11, Linux ou macOS
 - Navegador web moderno (Chrome, Firefox, Edge)
 
-## 📥 Instalação
+
+
+## 🚀 Como Rodar a Aplicação
+
+### ✅ Opção 1: Usando Docker (recomendado)
+
+> Essa opção isola o ambiente, evita conflitos de dependência e não exige instalação local do Python.
 
 1. **Clone o Repositório**
+
+```bash
+git clone https://github.com/seu-usuario/visionedge.git
+cd visionedge
+```
+
+2. **Certifique-se de que o modelo YOLOv8 (`yolov8n.pt`) esteja na raiz do projeto.**
+   Se não estiver, baixe com:
+
+```bash
+wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
+```
+
+3. **Suba a aplicação com build automático:**
+
+```bash
+docker-compose up --build
+```
+
+4. **Acesse no navegador:**
+
+```
+http://localhost:5000
+```
+
+---
+
+### 🧪 Opção 2: Usando Python Localmente (ambiente virtual)
+
+> Ideal para desenvolvedores que desejam rodar o projeto diretamente em seu sistema.
+
+1. **Clone o Repositório**
+
 ```bash
 git clone https://github.com/seu-usuario/visionedge.git
 cd visionedge
 ```
 
 2. **Configure o Ambiente Virtual**
+
 ```bash
 # Windows
 python -m venv venv
@@ -76,11 +116,13 @@ source venv/bin/activate
 ```
 
 3. **Instale as Dependências**
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Baixe o Modelo YOLOv8**
+4. **Baixe o Modelo YOLOv8 (se ainda não tiver o arquivo `yolov8n.pt`)**
+
 ```bash
 # Windows (PowerShell)
 Invoke-WebRequest -Uri "https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt" -OutFile "yolov8n.pt"
@@ -89,28 +131,35 @@ Invoke-WebRequest -Uri "https://github.com/ultralytics/assets/releases/download/
 wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
 ```
 
-## 🎮 Como Usar
+5. **Inicie a Aplicação**
 
-1. **Inicie o Servidor**
 ```bash
 python app.py
 ```
 
-2. **Acesse a Interface**
+6. **Acesse no navegador:**
+
 ```
 http://localhost:5000
 ```
 
-3. **Configure a Fonte de Vídeo**
+## 🎮 Como Usar
+
+1. **Acesse a Interface**
+```
+http://localhost:5000
+```
+
+2. **Configure a Fonte de Vídeo**
 - **Webcam**: Use `0` como URL
 - **Câmera IP**: URL RTSP (ex: `rtsp://admin:admin@192.168.1.100:554/stream`)
 - **Arquivo**: Faça upload do arquivo de vídeo
 
-4. **Selecione o Tipo de Negócio**
+3. **Selecione o Tipo de Negócio**
 - Escolha entre Supermercado, Farmácia ou Condomínio
 - As métricas serão atualizadas automaticamente
 
-5. **Inicie a Detecção**
+4. **Inicie a Detecção**
 - Clique em "Iniciar Detecção"
 - Monitore as métricas em tempo real
 - Acompanhe as recomendações
@@ -131,7 +180,9 @@ visionedge/
 ├── templates/               # Templates HTML
 │   └── index.html          # Interface principal
 ├── uploads/                # Pasta para uploads
-└── events/                 # Logs de eventos
+├── events/                 # Logs de eventos
+├── Dockerfile              # Docker para o back-end
+├── docker-compose.yml 
 ```
 
 ## ⚙️ Configuração
