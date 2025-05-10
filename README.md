@@ -60,6 +60,10 @@ Sistema avançado de análise de vídeo em tempo real com detecção de objetos 
 
 ## 🚀 Como Rodar a Aplicação
 
+Perfeito! Aqui está o bloco **atualizado e claro** para o seu `README.md`, com a instrução de **primeira execução com build** e **execuções futuras** usando `up -d`:
+
+---
+
 ### ✅ Opção 1: Usando Docker (recomendado)
 
 > Essa opção isola o ambiente, evita conflitos de dependência e não exige instalação local do Python.
@@ -78,19 +82,23 @@ cd visionedge
 wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
 ```
 
-3. **Suba a aplicação com build automático:**
+3. **Suba a aplicação com build automático (somente na primeira vez):**
 
 ```bash
 docker-compose up --build
 ```
 
-4. **Acesse no navegador:**
+4. **Em execuções futuras, utilize apenas:**
+
+```bash
+docker-compose up -d
+```
+
+5. **Acesse no navegador:**
 
 ```
 http://localhost:5000
 ```
-
----
 
 ### 🧪 Opção 2: Usando Python Localmente (ambiente virtual)
 
