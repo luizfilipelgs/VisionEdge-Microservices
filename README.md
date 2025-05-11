@@ -60,10 +60,6 @@ Sistema avançado de análise de vídeo em tempo real com detecção de objetos 
 
 ## 🚀 Como Rodar a Aplicação
 
-Perfeito! Aqui está o bloco **atualizado e claro** para o seu `README.md`, com a instrução de **primeira execução com build** e **execuções futuras** usando `up -d`:
-
----
-
 ### ✅ Opção 1: Usando Docker (recomendado)
 
 > Essa opção isola o ambiente, evita conflitos de dependência e não exige instalação local do Python.
