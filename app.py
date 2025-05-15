@@ -34,7 +34,7 @@ os.makedirs('events', exist_ok=True)
 # Initialize video processor and event logger
 try:
     video_processor = VideoProcessor(business_type='supermarket')
-    event_logger = EventLogger('events/detection_events.txt')
+    event_logger = EventLogger('events/detection_events.txt', business_type=video_processor.business_analytics.business_type)
     logger.info("Sistema inicializado com sucesso!")
 except Exception as e:
     logger.error(f"Erro ao inicializar o sistema: {str(e)}")
@@ -56,15 +56,14 @@ def set_business_type():
     try:
         data = request.get_json()
         business_type = data.get('business_type')
-        
         if not business_type:
             return jsonify({'error': 'Tipo de negócio não fornecido'}), 400
-            
         video_processor.business_analytics.business_type = business_type
         video_processor.business_analytics.reset_metrics()
-        
+        # Atualizar o event_logger para novo tipo de negócio
+        global event_logger
+        event_logger = EventLogger('events/detection_events.txt', business_type=business_type)
         return jsonify({'message': f'Tipo de negócio alterado para {business_type}'})
-        
     except Exception as e:
         logger.error(f"Erro ao alterar tipo de negócio: {str(e)}")
         return jsonify({'error': str(e)}), 500

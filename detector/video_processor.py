@@ -2,11 +2,14 @@ import cv2
 import numpy as np
 import logging
 from ultralytics import YOLO
+from ultralytics.nn.tasks import DetectionModel
 from .business_analytics import BusinessAnalytics
 import time
 import os
 import threading
 from queue import Queue
+import torch
+import torch.nn.modules.container as container
 
 class VideoProcessor:
     def __init__(self, business_type='supermarket'):
@@ -14,6 +17,7 @@ class VideoProcessor:
         
         # Carrega o modelo YOLO com verificação
         try:
+            torch.serialization.add_safe_globals([DetectionModel, container.Sequential])
             self.model = YOLO('yolov8n.pt')
             if not hasattr(self.model, 'predict'):
                 raise Exception("Modelo YOLO não carregado corretamente")

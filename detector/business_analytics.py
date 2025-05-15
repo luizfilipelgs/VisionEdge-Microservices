@@ -13,15 +13,15 @@ class BusinessAnalytics:
         # Configurações específicas por tipo de negócio
         self.business_configs = {
             'supermarket': {
-                'important_objects': ['person', 'shopping cart', 'bottle', 'cup', 'bowl', 'banana', 'apple', 'orange', 'sandwich', 'carrot'],
+                'important_objects': ['person', 'shopping cart', 'bottle', 'cup', 'bowl', 'banana', 'apple', 'orange', 'sandwich', 'carrot', 'cell phone', 'backpack', 'handbag'],
                 'zones': ['entrance', 'middle', 'exit']
             },
             'pharmacy': {
-                'important_objects': ['person', 'bottle', 'cup', 'bowl', 'book', 'cell phone'],
+                'important_objects': ['person', 'bottle', 'cup', 'bowl', 'book', 'cell phone', 'backpack', 'handbag', 'chair', 'bench'],
                 'zones': ['entrance', 'middle', 'exit']
             },
             'condominium': {
-                'important_objects': ['person', 'car', 'bicycle', 'motorcycle', 'truck'],
+                'important_objects': ['person', 'car', 'bicycle', 'motorcycle', 'truck', 'dog', 'cat', 'backpack', 'handbag'],
                 'zones': ['entrance', 'middle', 'exit']
             }
         }
@@ -37,21 +37,30 @@ class BusinessAnalytics:
                 'cart_count': 0,
                 'product_count': 0,
                 'zone_density': defaultdict(int),
-                'average_stay_time': 0
+                'average_stay_time': 0,
+                'backpack_count': 0,
+                'handbag_count': 0,
+                'cellphone_count': 0
             },
             'pharmacy': {
                 'person_count': 0,
                 'prescription_count': 0,
                 'medicine_count': 0,
                 'zone_density': defaultdict(int),
-                'average_stay_time': 0
+                'average_stay_time': 0,
+                'backpack_count': 0,
+                'handbag_count': 0,
+                'chair_count': 0
             },
             'condominium': {
                 'person_count': 0,
                 'car_count': 0,
                 'bicycle_count': 0,
                 'zone_density': defaultdict(int),
-                'average_stay_time': 0
+                'average_stay_time': 0,
+                'dog_count': 0,
+                'cat_count': 0,
+                'backpack_count': 0
             }
         }
         
@@ -167,6 +176,23 @@ class BusinessAnalytics:
                                          if d['data']['class_name'] in ['bottle', 'cup', 'bowl', 'banana', 'apple', 'orange', 'sandwich', 'carrot'] and
                                          current_time - d['time'] < 5])
         
+        # NOVOS SERVIÇOS SUPERMERCADO
+        # 1. Contagem de mochilas (backpack)
+        if detection_data['class_name'] == 'backpack':
+            metrics['backpack_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'backpack' and
+                                         current_time - d['time'] < 5])
+        # 2. Contagem de bolsas (handbag)
+        if detection_data['class_name'] == 'handbag':
+            metrics['handbag_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'handbag' and
+                                         current_time - d['time'] < 5])
+        # 3. Contagem de celulares (cell phone)
+        if detection_data['class_name'] == 'cell phone':
+            metrics['cellphone_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'cell phone' and
+                                         current_time - d['time'] < 5])
+        
         # Densidade por zona
         if 'zone' in detection_data:
             metrics['zone_density'][detection_data['zone']] = len([d for d in self.detection_history 
@@ -207,6 +233,23 @@ class BusinessAnalytics:
                                           if d['data']['class_name'] in ['bottle', 'cup', 'bowl'] and
                                           current_time - d['time'] < 5])
         
+        # NOVOS SERVIÇOS FARMÁCIA
+        # 1. Contagem de mochilas (backpack)
+        if detection_data['class_name'] == 'backpack':
+            metrics['backpack_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'backpack' and
+                                         current_time - d['time'] < 5])
+        # 2. Contagem de bolsas (handbag)
+        if detection_data['class_name'] == 'handbag':
+            metrics['handbag_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'handbag' and
+                                         current_time - d['time'] < 5])
+        # 3. Contagem de cadeiras (chair)
+        if detection_data['class_name'] == 'chair':
+            metrics['chair_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'chair' and
+                                         current_time - d['time'] < 5])
+        
         # Densidade por zona
         if 'zone' in detection_data:
             metrics['zone_density'][detection_data['zone']] = len([d for d in self.detection_history 
@@ -246,6 +289,23 @@ class BusinessAnalytics:
             metrics['bicycle_count'] = len([d for d in self.detection_history 
                                           if d['data']['class_name'] == 'bicycle' and
                                           current_time - d['time'] < 5])
+        
+        # NOVOS SERVIÇOS CONDOMÍNIO
+        # 1. Contagem de cachorros (dog)
+        if detection_data['class_name'] == 'dog':
+            metrics['dog_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'dog' and
+                                         current_time - d['time'] < 5])
+        # 2. Contagem de gatos (cat)
+        if detection_data['class_name'] == 'cat':
+            metrics['cat_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'cat' and
+                                         current_time - d['time'] < 5])
+        # 3. Contagem de mochilas (backpack)
+        if detection_data['class_name'] == 'backpack':
+            metrics['backpack_count'] = len([d for d in self.detection_history 
+                                         if d['data']['class_name'] == 'backpack' and
+                                         current_time - d['time'] < 5])
         
         # Densidade por zona
         if 'zone' in detection_data:
