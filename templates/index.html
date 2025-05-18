@@ -88,45 +88,76 @@
     .video-container {
       position: relative;
       width: 100%;
-      background-color: var(--gray-900);
-      border-radius: 15px;
+      height: 480px;
+      background-color: #000;
+      margin-bottom: 20px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      aspect-ratio: 16/9;
     }
 
-    .video-container.expanded {
-      position: fixed;
+    #videoStream {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .stream-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .stream-status.active {
+      background-color: rgba(40, 167, 69, 0.8);
+      color: white;
+    }
+
+    .stream-status.inactive {
+      background-color: rgba(220, 53, 69, 0.8);
+      color: white;
+    }
+
+    .loading-overlay {
+      position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
       z-index: 1000;
-      border-radius: 0;
     }
 
-    .video-container.expanded video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
-    .video-container video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .alert {
+      display: none;
+      margin-bottom: 20px;
     }
 
     .controls {
-      background: linear-gradient(135deg, var(--gray-100), var(--gray-200));
-      padding: 15px;
-      border-radius: 15px;
-      margin-bottom: 30px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--gray-300);
+      background-color: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
     }
 
     .form-control {
@@ -271,66 +302,6 @@
       font-size: 0.95rem;
       color: var(--gray-700);
       font-weight: 500;
-    }
-
-    .loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .loading-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid var(--gray-300);
-      border-top-color: var(--accent-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .alert {
-      border-radius: 10px;
-      padding: 15px 20px;
-      margin-bottom: 20px;
-      border: none;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      display: none;
-    }
-
-    .alert-success {
-      background: linear-gradient(135deg, var(--success-color), #00a844);
-      color: white;
-    }
-
-    .alert-danger {
-      background: linear-gradient(135deg, var(--danger-color), #b71c1c);
-      color: white;
-    }
-
-    .alert-warning {
-      background: linear-gradient(135deg, var(--warning-color), #ffc107);
-      color: var(--gray-900);
     }
 
     .tooltip {
@@ -531,33 +502,36 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let isStreamActive = false;
-    let updateInterval;
-
     function showAlert(message, type) {
-      const alert = document.querySelector(`.alert-${type}`);
-      alert.textContent = message;
-      alert.style.display = 'block';
+        const alertDiv = document.querySelector(`.alert-${type}`);
+        alertDiv.textContent = message;
+        alertDiv.style.display = 'block';
       setTimeout(() => {
-        alert.style.display = 'none';
+            alertDiv.style.display = 'none';
       }, 5000);
     }
 
-    function updateStreamStatus(active) {
-      const status = document.querySelector('.stream-status');
-      if (active) {
-        status.textContent = 'Stream Ativo';
-        status.classList.remove('inactive');
-        status.classList.add('active');
+    function updateStreamStatus(isActive) {
+        const statusDiv = document.querySelector('.stream-status');
+        const videoStream = document.getElementById('videoStream');
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        
+        if (isActive) {
+            statusDiv.classList.remove('inactive');
+            statusDiv.classList.add('active');
+            statusDiv.textContent = 'Stream Ativo';
+            videoStream.style.display = 'block';
+            loadingOverlay.style.display = 'none';
       } else {
-        status.textContent = 'Stream Inativo';
-        status.classList.remove('active');
-        status.classList.add('inactive');
-      }
-      isStreamActive = active;
+            statusDiv.classList.remove('active');
+            statusDiv.classList.add('inactive');
+            statusDiv.textContent = 'Stream Inativo';
+            videoStream.style.display = 'none';
+            loadingOverlay.style.display = 'flex';
+        }
     }
 
-    function startDetection() {
+    async function startDetection() {
       const streamUrl = document.getElementById('streamUrl').value;
       const businessType = document.getElementById('businessType').value;
 
@@ -566,190 +540,82 @@
         return;
       }
 
-      document.querySelector('.loading-overlay').style.display = 'flex';
+        try {
+            // Atualiza o tipo de negócio
+            const businessResponse = await fetch('/set_business_type', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ business_type: businessType })
+            });
 
-      fetch('/start_detection', {
+            if (!businessResponse.ok) {
+                throw new Error('Erro ao atualizar tipo de negócio');
+            }
+
+            // Inicia a detecção
+            const response = await fetch('/start_detection', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          source: streamUrl,
-          business_type: businessType
-        })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            showAlert(data.error, 'danger');
-          } else {
-            showAlert('Detecção iniciada com sucesso', 'success');
-            updateStreamStatus(true);
-            startMetricsUpdate();
-          }
-        })
-        .catch(error => {
-          showAlert('Erro ao iniciar detecção: ' + error, 'danger');
-        })
-        .finally(() => {
-          document.querySelector('.loading-overlay').style.display = 'none';
-        });
-    }
-
-    function stopDetection() {
-      if (!isStreamActive) return;
-
-      document.querySelector('.loading-overlay').style.display = 'flex';
-
-      fetch('/stop_detection', {
-        method: 'POST'
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            showAlert(data.error, 'danger');
-          } else {
-            showAlert('Detecção parada com sucesso', 'success');
-            updateStreamStatus(false);
-            stopMetricsUpdate();
-          }
-        })
-        .catch(error => {
-          showAlert('Erro ao parar detecção: ' + error, 'danger');
-        })
-        .finally(() => {
-          document.querySelector('.loading-overlay').style.display = 'none';
-        });
-    }
-
-    function startMetricsUpdate() {
-      updateInterval = setInterval(updateMetrics, 1000);
-    }
-
-    function stopMetricsUpdate() {
-      if (updateInterval) {
-        clearInterval(updateInterval);
-      }
-    }
-
-    function updateMetrics() {
-      fetch('/get_insights')
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            showAlert(data.error, 'danger');
-            return;
-          }
-          const metrics = data.metrics;
-
-          // Supermercado
-          if (document.getElementById('personCount')) document.getElementById('personCount').textContent = metrics.person_count || 0;
-          if (document.getElementById('cartCount')) document.getElementById('cartCount').textContent = metrics.cart_count || 0;
-          if (document.getElementById('backpackCount')) document.getElementById('backpackCount').textContent = metrics.backpack_count || 0;
-          if (document.getElementById('handbagCount')) document.getElementById('handbagCount').textContent = metrics.handbag_count || 0;
-          if (document.getElementById('cellphoneCount')) document.getElementById('cellphoneCount').textContent = metrics.cellphone_count || 0;
-          if (document.getElementById('averageTime')) document.getElementById('averageTime').textContent = Math.round(metrics.average_stay_time || 0) + 's';
-          if (document.getElementById('occupancyRate')) document.getElementById('occupancyRate').textContent = (metrics.occupancy_rate !== undefined ? Math.round(metrics.occupancy_rate) : 0) + '%';
-
-          // Farmácia
-          if (document.getElementById('pharmacyPersonCount')) document.getElementById('pharmacyPersonCount').textContent = metrics.person_count || 0;
-          if (document.getElementById('pharmacyBackpackCount')) document.getElementById('pharmacyBackpackCount').textContent = metrics.backpack_count || 0;
-          if (document.getElementById('pharmacyHandbagCount')) document.getElementById('pharmacyHandbagCount').textContent = metrics.handbag_count || 0;
-          if (document.getElementById('pharmacyChairCount')) document.getElementById('pharmacyChairCount').textContent = metrics.chair_count || 0;
-          if (document.getElementById('pharmacyWaitTime')) document.getElementById('pharmacyWaitTime').textContent = Math.round(metrics.average_stay_time || 0) + 's';
-          if (document.getElementById('pharmacyQueueLength')) document.getElementById('pharmacyQueueLength').textContent = metrics.queue_length || 0;
-          if (document.getElementById('pharmacyStaffCount')) document.getElementById('pharmacyStaffCount').textContent = metrics.staff_count || 0;
-
-          // Condomínio
-          if (document.getElementById('condoPersonCount')) document.getElementById('condoPersonCount').textContent = metrics.person_count || 0;
-          if (document.getElementById('condoBackpackCount')) document.getElementById('condoBackpackCount').textContent = metrics.backpack_count || 0;
-          if (document.getElementById('condoDogCount')) document.getElementById('condoDogCount').textContent = metrics.dog_count || 0;
-          if (document.getElementById('condoCatCount')) document.getElementById('condoCatCount').textContent = metrics.cat_count || 0;
-          if (document.getElementById('condoVehicleCount')) document.getElementById('condoVehicleCount').textContent = metrics.vehicle_count || 0;
-          if (document.getElementById('condoEntranceCount')) document.getElementById('condoEntranceCount').textContent = metrics.entrance_count || 0;
-          if (document.getElementById('condoSecurityAlerts')) document.getElementById('condoSecurityAlerts').textContent = metrics.security_alerts || 0;
-
-          // Recomendações
-          const recommendationsList = document.getElementById('recommendationsList');
-          recommendationsList.innerHTML = '';
-          if (data.recommendations && data.recommendations.length > 0) {
-            data.recommendations.forEach(rec => {
-              const div = document.createElement('div');
-              div.className = 'recommendation-item';
-              div.textContent = rec;
-              recommendationsList.appendChild(div);
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ source: streamUrl })
             });
-          } else {
-            recommendationsList.innerHTML = '<p class="text-muted">Nenhuma recomendação disponível no momento.</p>';
-          }
-        })
-        .catch(error => {
-          console.error('Erro ao atualizar métricas:', error);
-        });
+
+            if (!response.ok) {
+                throw new Error('Erro ao iniciar detecção');
+            }
+
+            const data = await response.json();
+            showAlert(data.message, 'success');
+            updateStreamStatus(true);
+
+            // Atualiza o stream de vídeo
+            const videoStream = document.getElementById('videoStream');
+            videoStream.src = `/video_feed?t=${new Date().getTime()}`;
+
+        } catch (error) {
+            showAlert(error.message, 'danger');
+            updateStreamStatus(false);
+        }
     }
 
-    // Adiciona listener para mudança de tipo de negócio
-    document.getElementById('businessType').addEventListener('change', function () {
-      const businessType = this.value;
-      // Ativa a aba correspondente
-      const tabId = `tab-${businessType}`;
-      const tab = document.getElementById(tabId);
-      if (tab) {
-        new bootstrap.Tab(tab).show();
-      }
-      updateMetrics();
-    });
+    async function stopDetection() {
+        try {
+            const response = await fetch('/stop_detection', {
+                method: 'POST'
+            });
 
-    // Sincroniza seleção de aba manual com select
-    document.querySelectorAll('#businessTabs .nav-link').forEach(tab => {
-      tab.addEventListener('shown.bs.tab', function (e) {
-        const businessType = e.target.id.replace('tab-', '');
-        document.getElementById('businessType').value = businessType;
-        updateMetrics();
-      });
-    });
+            if (!response.ok) {
+                throw new Error('Erro ao parar detecção');
+            }
 
-    // Upload de arquivo
-    document.getElementById('videoFile').addEventListener('change', function (e) {
-      const file = e.target.files[0];
-      document.getElementById('fileStatus').textContent = file ? file.name : 'Nenhum arquivo escolhido';
+            const data = await response.json();
+            showAlert(data.message, 'success');
+            updateStreamStatus(false);
 
-      if (!file) return;
+        } catch (error) {
+            showAlert(error.message, 'danger');
+        }
+    }
 
-      const formData = new FormData();
-      formData.append('file', file);
+    // Atualiza o status do stream a cada 5 segundos
+    setInterval(async () => {
+        try {
+            const response = await fetch('/get_insights');
+            if (response.ok) {
+                updateStreamStatus(true);
+            } else {
+                updateStreamStatus(false);
+            }
+        } catch (error) {
+            updateStreamStatus(false);
+        }
+    }, 5000);
 
-      document.querySelector('.loading-overlay').style.display = 'flex';
-
-      fetch('/upload', {
-        method: 'POST',
-        body: formData
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            showAlert(data.error, 'danger');
-          } else {
-            showAlert('Arquivo enviado com sucesso', 'success');
-            startDetection(data.filename);
-          }
-        })
-        .catch(error => {
-          showAlert('Erro no upload: ' + error, 'danger');
-        })
-        .finally(() => {
-          document.querySelector('.loading-overlay').style.display = 'none';
-        });
-    });
-
-
-    // Expansão do vídeo
-    document.querySelector('.video-container').addEventListener('click', function () {
-      this.classList.toggle('expanded');
-    });
-
-    // Inicialização
-    document.addEventListener('DOMContentLoaded', function () {
+    // Inicializa o status do stream
+    document.addEventListener('DOMContentLoaded', () => {
       updateStreamStatus(false);
     });
   </script>

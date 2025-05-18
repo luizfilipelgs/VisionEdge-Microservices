@@ -32,70 +32,70 @@ class VideoProcessor:
         self.current_frame = None
         self.frame_interval = 0.033  # ~30 FPS
         self.last_detection_time = 0
-        self.detection_interval = 0.05  # Reduzido para 50ms entre detecções
-        self.frame_queue = Queue(maxsize=1)  # Buffer mínimo
+        self.detection_interval = 0.1  # 100ms entre detecções
+        self.frame_queue = Queue(maxsize=10)
         self.processing_thread = None
         self.frame_count = 0
         self.last_frame_time = 0
         self.processing_delay = 0
         self.skip_frames = 0
-        self.max_skip_frames = 1  # Mínimo de frames pulados
+        self.max_skip_frames = 3
         
-        # Configurações de RTSP otimizadas
-        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|buffer_size;1024'
+        # Configurações de RTSP
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
         
         # Configurações de classes e limiares por tipo de negócio
         self.class_configs = {
             'supermarket': {
                 'classes': ['person', 'shopping cart', 'backpack', 'handbag', 'cell phone', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl'],
                 'thresholds': {
-                    'person': 0.4,  # Reduzido para capturar mais detecções
-                    'shopping cart': 0.3,
-                    'backpack': 0.3,
-                    'handbag': 0.3,
-                    'cell phone': 0.3,
-                    'bottle': 0.25,
-                    'wine glass': 0.25,
-                    'cup': 0.25,
-                    'fork': 0.25,
-                    'knife': 0.25,
-                    'spoon': 0.25,
-                    'bowl': 0.25
+                    'person': 0.5,
+                    'shopping cart': 0.4,
+                    'backpack': 0.4,
+                    'handbag': 0.4,
+                    'cell phone': 0.4,
+                    'bottle': 0.3,
+                    'wine glass': 0.3,
+                    'cup': 0.3,
+                    'fork': 0.3,
+                    'knife': 0.3,
+                    'spoon': 0.3,
+                    'bowl': 0.3
                 }
             },
             'pharmacy': {
                 'classes': ['person', 'backpack', 'handbag', 'chair', 'bottle', 'cell phone', 'book'],
                 'thresholds': {
-                    'person': 0.4,
-                    'backpack': 0.3,
-                    'handbag': 0.3,
-                    'chair': 0.3,
-                    'bottle': 0.25,
-                    'cell phone': 0.3,
-                    'book': 0.25
+                    'person': 0.5,
+                    'backpack': 0.4,
+                    'handbag': 0.4,
+                    'chair': 0.4,
+                    'bottle': 0.3,
+                    'cell phone': 0.4,
+                    'book': 0.3
                 }
             },
             'condominium': {
                 'classes': ['person', 'car', 'truck', 'motorcycle', 'dog', 'cat', 'backpack', 'handbag', 'suitcase'],
                 'thresholds': {
-                    'person': 0.4,
-                    'car': 0.3,
-                    'truck': 0.3,
-                    'motorcycle': 0.3,
-                    'dog': 0.3,
-                    'cat': 0.3,
-                    'backpack': 0.3,
-                    'handbag': 0.3,
-                    'suitcase': 0.3
+                    'person': 0.5,
+                    'car': 0.4,
+                    'truck': 0.4,
+                    'motorcycle': 0.4,
+                    'dog': 0.4,
+                    'cat': 0.4,
+                    'backpack': 0.4,
+                    'handbag': 0.4,
+                    'suitcase': 0.4
                 }
             }
         }
         
-        # Inicializa o rastreador de objetos com histórico reduzido
+        # Inicializa o rastreador de objetos
         self.tracked_objects = {}
         self.next_object_id = 0
         self.object_history = defaultdict(list)
-        self.max_history_length = 10  # Reduzido para melhor performance
+        self.max_history_length = 30  # Mantém histórico dos últimos 30 frames
         
         # Configurações de cores para visualização
         self.colors = {
@@ -124,15 +124,15 @@ class VideoProcessor:
             if os.path.isfile(source):
                 self.cap = cv2.VideoCapture(source)
             else:
-                # Configurações específicas para RTSP otimizadas
-                os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp|buffer_size;1024'
+                # Configurações específicas para RTSP
+                os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
                 self.cap = cv2.VideoCapture(source, cv2.CAP_FFMPEG)
             
             if not self.cap.isOpened():
                 raise Exception("Não foi possível abrir a fonte de vídeo")
             
-            # Configurações de buffer e codec otimizadas
-            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Buffer mínimo
+            # Configurações de buffer e codec
+            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # Reduzido para menor latência
             self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
             self.cap.set(cv2.CAP_PROP_FPS, 30)
             
@@ -264,19 +264,14 @@ class VideoProcessor:
         """Desenha as trajetórias dos objetos rastreados"""
         for obj_id, history in self.object_history.items():
             if len(history) > 1:
-                # Aumenta a espessura da linha da trajetória
                 points = np.array(history, dtype=np.int32)
-                cv2.polylines(frame, [points], False, (0, 255, 255), 3)
+                cv2.polylines(frame, [points], False, (0, 255, 255), 2)
                 
-                # Desenha o ID do objeto com fundo para melhor visibilidade
+                # Desenha o ID do objeto
                 if history:
                     x, y = history[-1]
-                    label = f"ID: {obj_id}"
-                    (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
-                    cv2.rectangle(frame, (int(x), int(y)-label_height-10), 
-                                (int(x)+label_width, int(y)), (0, 255, 255), -1)
-                    cv2.putText(frame, label, (int(x), int(y)-5),
-                              cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+                    cv2.putText(frame, f"ID: {obj_id}", (int(x), int(y)),
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
     def _determine_zone(self, x1, y1, x2, y2, frame_shape):
         """Determina a zona do objeto baseado em sua posição"""
@@ -298,19 +293,21 @@ class VideoProcessor:
             if not self._is_valid_frame(frame):
                 return frame
                 
-            # Redimensiona o frame para melhor performance
-            height, width = frame.shape[:2]
-            if width > 1280:  # Limita a largura máxima
-                scale = 1280 / width
-                frame = cv2.resize(frame, None, fx=scale, fy=scale)
+            current_time = time.time()
+            
+            # Limita a frequência de detecções
+            if current_time - self.last_detection_time < self.detection_interval:
+                return frame
+                
+            self.last_detection_time = current_time
             
             # Obtém configurações do tipo de negócio atual
             business_config = self.class_configs.get(self.business_analytics.business_type, self.class_configs['supermarket'])
             allowed_classes = business_config['classes']
             thresholds = business_config['thresholds']
             
-            # Realiza a detecção com confiança mínima reduzida
-            results = self.model(frame, conf=0.25)
+            # Realiza a detecção
+            results = self.model(frame, conf=0.3)  # Limiar inicial baixo para capturar mais detecções
             
             detections = []
             # Processa as detecções
@@ -325,7 +322,7 @@ class VideoProcessor:
                         class_name = result.names[class_id]
                         
                         # Verifica se a classe é permitida e se atinge o limiar
-                        if class_name in allowed_classes and confidence >= thresholds.get(class_name, 0.25):
+                        if class_name in allowed_classes and confidence >= thresholds.get(class_name, 0.3):
                             # Verifica se as coordenadas estão dentro dos limites do frame
                             height, width = frame.shape[:2]
                             x1 = max(0, min(int(x1), width-1))
@@ -344,45 +341,24 @@ class VideoProcessor:
                                 'zone': zone
                             })
                             
-                            # Atualiza métricas de negócio imediatamente
+                            # Atualiza métricas de negócio
                             self.business_analytics.process_detection(detections[-1])
                             
-                            # Desenha a detecção no frame com cores mais vibrantes
+                            # Desenha a detecção no frame
                             color = self.colors.get(class_name, self.colors['default'])
-                            
-                            # Desenha a caixa de detecção com linha mais grossa
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 4)
-                            
-                            # Prepara o texto da label
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                             label = f"{class_name}: {confidence:.2f}"
-                            
-                            # Calcula o tamanho do texto para criar o fundo
-                            (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-                            
-                            # Desenha o fundo do texto
-                            cv2.rectangle(frame, 
-                                        (x1, y1-label_height-10), 
-                                        (x1+label_width, y1), 
-                                        color, 
-                                        -1)
-                            
-                            # Desenha o texto com fonte maior
-                            cv2.putText(frame, 
-                                      label, 
-                                      (x1, y1-5),
-                                      cv2.FONT_HERSHEY_SIMPLEX, 
-                                      0.8, 
-                                      (255, 255, 255), 
-                                      2)
+                            cv2.putText(frame, label, (x1, y1-10),
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                             
                     except Exception as e:
                         self.logger.error(f"Erro ao processar detecção: {str(e)}")
                         continue
-                        
-            # Atualiza o tracker e desenha as trajetórias
+            
+            # Atualiza o rastreador e desenha as trajetórias
             self._update_tracker(frame, detections)
             self._draw_tracking(frame)
-            
+                        
             return frame
             
         except Exception as e:
@@ -403,16 +379,16 @@ class VideoProcessor:
                     ret, frame = self.cap.read()
                     if not ret or not self._is_valid_frame(frame):
                         self.logger.warning("Erro ao ler frame, tentando reconectar...")
-                        time.sleep(0.05)  # Reduzido para melhor resposta
+                        time.sleep(1)
                         continue
 
-                    # Processa o frame diretamente
-                    processed_frame = self.process_frame(frame)
-                    if processed_frame is not None:
-                        frame = processed_frame
+                # Processa o frame
+                processed_frame = self.process_frame(frame)
+                if processed_frame is not None:
+                    frame = processed_frame
 
-                # Converte o frame para JPEG com qualidade otimizada
-                ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                # Converte o frame para JPEG
+                ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
                 if not ret:
                     continue
 
@@ -420,12 +396,12 @@ class VideoProcessor:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
-                # Delay mínimo para evitar sobrecarga
-                time.sleep(0.001)
+                # Pequeno delay para controlar o FPS
+                time.sleep(self.frame_interval)
 
             except Exception as e:
                 self.logger.error(f"Erro ao gerar frame: {str(e)}")
-                time.sleep(0.05)  # Reduzido para melhor resposta
+                time.sleep(1)
 
     def get_metrics(self):
         """Retorna as métricas atuais"""

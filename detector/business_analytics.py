@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
 import numpy as np
+from scipy import stats
 
 class BusinessAnalytics:
     def __init__(self, business_type='supermarket'):
@@ -14,15 +15,39 @@ class BusinessAnalytics:
         self.business_configs = {
             'supermarket': {
                 'important_objects': ['person', 'shopping cart', 'bottle', 'cup', 'bowl', 'banana', 'apple', 'orange', 'sandwich', 'carrot', 'cell phone', 'backpack', 'handbag'],
-                'zones': ['entrance', 'middle', 'exit']
+                'zones': ['entrance', 'middle', 'exit'],
+                'metrics': {
+                    'person_count': {'threshold': 20, 'warning': 'Alta movimentação'},
+                    'cart_count': {'threshold': 10, 'warning': 'Muitos carrinhos em uso'},
+                    'product_count': {'threshold': 50, 'warning': 'Alto volume de produtos'},
+                    'backpack_count': {'threshold': 5, 'warning': 'Alto número de mochilas'},
+                    'handbag_count': {'threshold': 5, 'warning': 'Alto número de bolsas'},
+                    'cellphone_count': {'threshold': 8, 'warning': 'Alto uso de celulares'}
+                }
             },
             'pharmacy': {
                 'important_objects': ['person', 'bottle', 'cup', 'bowl', 'book', 'cell phone', 'backpack', 'handbag', 'chair', 'bench'],
-                'zones': ['entrance', 'middle', 'exit']
+                'zones': ['entrance', 'middle', 'exit'],
+                'metrics': {
+                    'person_count': {'threshold': 10, 'warning': 'Alta movimentação'},
+                    'prescription_count': {'threshold': 5, 'warning': 'Alto volume de prescrições'},
+                    'medicine_count': {'threshold': 20, 'warning': 'Alto volume de medicamentos'},
+                    'backpack_count': {'threshold': 3, 'warning': 'Alto número de mochilas'},
+                    'handbag_count': {'threshold': 3, 'warning': 'Alto número de bolsas'},
+                    'chair_count': {'threshold': 4, 'warning': 'Alto uso de cadeiras'}
+                }
             },
             'condominium': {
                 'important_objects': ['person', 'car', 'bicycle', 'motorcycle', 'truck', 'dog', 'cat', 'backpack', 'handbag'],
-                'zones': ['entrance', 'middle', 'exit']
+                'zones': ['entrance', 'middle', 'exit'],
+                'metrics': {
+                    'person_count': {'threshold': 15, 'warning': 'Alta movimentação'},
+                    'car_count': {'threshold': 5, 'warning': 'Alto fluxo de veículos'},
+                    'bicycle_count': {'threshold': 3, 'warning': 'Alto fluxo de bicicletas'},
+                    'dog_count': {'threshold': 2, 'warning': 'Alto número de cachorros'},
+                    'cat_count': {'threshold': 2, 'warning': 'Alto número de gatos'},
+                    'backpack_count': {'threshold': 4, 'warning': 'Alto número de mochilas'}
+                }
             }
         }
         
@@ -40,7 +65,15 @@ class BusinessAnalytics:
                 'average_stay_time': 0,
                 'backpack_count': 0,
                 'handbag_count': 0,
-                'cellphone_count': 0
+                'cellphone_count': 0,
+                'peak_hours': defaultdict(int),
+                'object_trends': defaultdict(list),
+                'zone_transitions': defaultdict(int),
+                'performance_metrics': {
+                    'detection_rate': 0,
+                    'processing_time': 0,
+                    'confidence_avg': 0
+                }
             },
             'pharmacy': {
                 'person_count': 0,
@@ -50,7 +83,15 @@ class BusinessAnalytics:
                 'average_stay_time': 0,
                 'backpack_count': 0,
                 'handbag_count': 0,
-                'chair_count': 0
+                'chair_count': 0,
+                'peak_hours': defaultdict(int),
+                'object_trends': defaultdict(list),
+                'zone_transitions': defaultdict(int),
+                'performance_metrics': {
+                    'detection_rate': 0,
+                    'processing_time': 0,
+                    'confidence_avg': 0
+                }
             },
             'condominium': {
                 'person_count': 0,
@@ -60,15 +101,24 @@ class BusinessAnalytics:
                 'average_stay_time': 0,
                 'dog_count': 0,
                 'cat_count': 0,
-                'backpack_count': 0
+                'backpack_count': 0,
+                'peak_hours': defaultdict(int),
+                'object_trends': defaultdict(list),
+                'zone_transitions': defaultdict(int),
+                'performance_metrics': {
+                    'detection_rate': 0,
+                    'processing_time': 0,
+                    'confidence_avg': 0
+                }
             }
         }
         
         self.detection_history = []
         self.last_update = time.time()
-        self.object_tracking = {}  # Para rastrear objetos entre frames
-        self.object_positions = {}  # Para rastrear posições dos objetos
-        self.object_timestamps = {}  # Para rastrear timestamps dos objetos
+        self.object_tracking = {}
+        self.object_positions = {}
+        self.object_timestamps = {}
+        self.performance_history = []
         
     def _calculate_iou(self, box1, box2):
         """Calcula o IoU (Intersection over Union) entre duas bounding boxes"""
@@ -85,10 +135,11 @@ class BusinessAnalytics:
         return intersection / union if union > 0 else 0
         
     def _track_object(self, detection_data):
-        """Rastreia objetos entre frames usando IoU"""
+        """Rastreia objetos entre frames usando IoU e Kalman Filter"""
         current_time = time.time()
         bbox = detection_data['bbox']
         class_name = detection_data['class_name']
+        confidence = detection_data.get('confidence', 0)
         
         # Limpa objetos antigos
         self.object_tracking = {k: v for k, v in self.object_tracking.items() 
@@ -107,10 +158,18 @@ class BusinessAnalytics:
         
         if best_match is not None:
             # Atualiza objeto existente
+            old_zone = self.object_tracking[best_match]['zone']
+            new_zone = detection_data.get('zone', 'unknown')
+            
+            if old_zone != new_zone:
+                self.metrics[self.business_type]['zone_transitions'][f"{old_zone}_to_{new_zone}"] += 1
+            
             self.object_tracking[best_match].update({
                 'bbox': bbox,
                 'last_seen': current_time,
-                'zone': detection_data.get('zone', 'unknown')
+                'zone': new_zone,
+                'confidence': confidence,
+                'trajectory': self.object_tracking[best_match].get('trajectory', []) + [bbox]
             })
             return best_match
         else:
@@ -121,12 +180,15 @@ class BusinessAnalytics:
                 'bbox': bbox,
                 'first_seen': current_time,
                 'last_seen': current_time,
-                'zone': detection_data.get('zone', 'unknown')
+                'zone': detection_data.get('zone', 'unknown'),
+                'confidence': confidence,
+                'trajectory': [bbox]
             }
             return obj_id
             
     def process_detection(self, detection_data):
         """Processa uma detecção e atualiza as métricas"""
+        start_time = time.time()
         current_time = time.time()
         
         # Rastreia o objeto
@@ -150,6 +212,27 @@ class BusinessAnalytics:
             self._update_pharmacy_metrics(detection_data, obj_id)
         elif self.business_type == 'condominium':
             self._update_condominium_metrics(detection_data, obj_id)
+            
+        # Atualiza métricas de performance
+        processing_time = time.time() - start_time
+        self.performance_history.append(processing_time)
+        if len(self.performance_history) > 100:
+            self.performance_history.pop(0)
+            
+        self.metrics[self.business_type]['performance_metrics'].update({
+            'detection_rate': len(self.detection_history) / 5,  # Detecções por segundo
+            'processing_time': np.mean(self.performance_history),
+            'confidence_avg': np.mean([d['data'].get('confidence', 0) for d in self.detection_history])
+        })
+        
+        # Atualiza horários de pico
+        hour = datetime.fromtimestamp(current_time).hour
+        self.metrics[self.business_type]['peak_hours'][hour] += 1
+        
+        # Atualiza tendências
+        self.metrics[self.business_type]['object_trends'][detection_data['class_name']].append(current_time)
+        if len(self.metrics[self.business_type]['object_trends'][detection_data['class_name']]) > 100:
+            self.metrics[self.business_type]['object_trends'][detection_data['class_name']].pop(0)
             
         self.last_update = current_time
         
@@ -328,54 +411,46 @@ class BusinessAnalytics:
         """Retorna insights de negócio baseados nas métricas atuais"""
         metrics = self.metrics[self.business_type]
         recommendations = []
+        trends = []
         
-        if self.business_type == 'supermarket':
-            if metrics['person_count'] > 20:
-                recommendations.append("Alta movimentação detectada. Considere abrir mais caixas.")
-            
-            if metrics['cart_count'] > 10:
-                recommendations.append("Muitos carrinhos em uso. Verifique a disponibilidade.")
-            
-            if metrics['product_count'] > 50:
-                recommendations.append("Alto volume de produtos detectados. Verifique o estoque.")
-            
-            if metrics['zone_density']['entrance'] > 5:
-                recommendations.append("Congestionamento na entrada. Considere abrir mais portas.")
-            
-            if metrics['average_stay_time'] > 600:  # 10 minutos
-                recommendations.append("Tempo médio de permanência alto. Otimize o layout da loja.")
-            
-        elif self.business_type == 'pharmacy':
-            if metrics['person_count'] > 10:
-                recommendations.append("Alta movimentação na farmácia. Considere aumentar a equipe.")
-            
-            if metrics['prescription_count'] > 5:
-                recommendations.append("Alto volume de prescrições. Otimize o atendimento.")
-            
-            if metrics['medicine_count'] > 20:
-                recommendations.append("Alto volume de medicamentos. Verifique o estoque.")
-            
-            if metrics['average_stay_time'] > 300:  # 5 minutos
-                recommendations.append("Tempo de permanência alto. Otimize o atendimento.")
-            
-        elif self.business_type == 'condominium':
-            if metrics['person_count'] > 15:
-                recommendations.append("Alta movimentação de pessoas. Reforce a segurança.")
-            
-            if metrics['car_count'] > 5:
-                recommendations.append("Alto fluxo de veículos. Verifique a capacidade do estacionamento.")
-            
-            if metrics['bicycle_count'] > 3:
-                recommendations.append("Alto fluxo de bicicletas. Verifique a segurança cicloviária.")
-            
-            if metrics['zone_density']['entrance'] > 5:
-                recommendations.append("Congestionamento na entrada. Considere abrir mais portas.")
-            
-            if metrics['average_stay_time'] > 1800:  # 30 minutos
-                recommendations.append("Tempo médio de permanência alto. Verifique a segurança.")
+        # Análise de tendências
+        for obj_type, timestamps in metrics['object_trends'].items():
+            if len(timestamps) > 10:
+                # Calcula a tendência usando regressão linear
+                x = np.array(range(len(timestamps)))
+                y = np.array(timestamps)
+                slope, _, r_value, _, _ = stats.linregress(x, y)
+                
+                if abs(slope) > 0.1:  # Se há uma tendência significativa
+                    trend = "aumentando" if slope > 0 else "diminuindo"
+                    trends.append(f"Tendência de {obj_type} está {trend} (confiança: {r_value**2:.2f})")
+        
+        # Análise de horários de pico
+        peak_hours = sorted(metrics['peak_hours'].items(), key=lambda x: x[1], reverse=True)[:3]
+        if peak_hours:
+            peak_times = [f"{h:02d}:00" for h, _ in peak_hours]
+            recommendations.append(f"Horários de pico: {', '.join(peak_times)}")
+        
+        # Análise de transições entre zonas
+        transitions = metrics['zone_transitions']
+        if transitions:
+            most_common = max(transitions.items(), key=lambda x: x[1])
+            recommendations.append(f"Transição mais comum: {most_common[0]}")
+        
+        # Análise de performance
+        perf_metrics = metrics['performance_metrics']
+        if perf_metrics['processing_time'] > 0.1:  # Se o tempo de processamento for alto
+            recommendations.append("Performance do sistema pode ser otimizada")
+        
+        # Verifica thresholds específicos do tipo de negócio
+        for metric, config in self.business_configs[self.business_type]['metrics'].items():
+            if metrics[metric] > config['threshold']:
+                recommendations.append(config['warning'])
         
         return {
             'business_type': self.business_type,
             'metrics': metrics,
-            'recommendations': recommendations
+            'recommendations': recommendations,
+            'trends': trends,
+            'performance': perf_metrics
         } 

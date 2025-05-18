@@ -78,52 +78,38 @@ def get_business_insights():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'Nenhum arquivo enviado'}), 400
-            
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
-            
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            video_processor.start_file_detection(filepath)
-            return jsonify({'message': 'Arquivo enviado com sucesso', 'filename': filename})
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Inicia a detecção com o arquivo salvo
+        if video_processor.connect(filepath):
+            return jsonify({'message': 'Arquivo enviado e processamento iniciado'})
         else:
-            return jsonify({'error': 'Tipo de arquivo não permitido'}), 400
-            
-    except Exception as e:
-        logger.error(f"Erro no upload de arquivo: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+            return jsonify({'error': 'Erro ao processar o arquivo'}), 500
 
 @app.route('/start_detection', methods=['POST'])
 def start_detection():
     try:
         data = request.get_json()
-        if not data or 'source' not in data:
-            return jsonify({'error': 'Fonte de vídeo não especificada'}), 400
-            
-        source = data['source']
-        business_type = data.get('business_type', 'supermarket')
+        source = data.get('source')
         
-        # Atualiza o tipo de negócio
-        video_processor.business_analytics.business_type = business_type
-        
-        if source.startswith(('rtsp://', 'http://', 'https://')):
-            # Stream RTSP/HTTP
-            video_processor.start_stream_detection(source)
+        if not source:
+            return jsonify({'error': 'URL do stream não fornecida'}), 400
+
+        if video_processor.connect(source):
+            return jsonify({'message': 'Detecção iniciada com sucesso'})
         else:
-            # Arquivo local
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(source))
-            if not os.path.exists(filepath):
-                return jsonify({'error': 'Arquivo não encontrado'}), 404
-            video_processor.start_file_detection(filepath)
-            
-        return jsonify({'message': 'Detecção iniciada com sucesso'})
-        
+            return jsonify({'error': 'Erro ao conectar à fonte de vídeo'}), 500
+
     except Exception as e:
         logger.error(f"Erro ao iniciar detecção: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -131,7 +117,7 @@ def start_detection():
 @app.route('/stop_detection', methods=['POST'])
 def stop_detection():
     try:
-        video_processor.stop_detection()
+        video_processor.disconnect()
         return jsonify({'message': 'Detecção parada com sucesso'})
     except Exception as e:
         logger.error(f"Erro ao parar detecção: {str(e)}")
@@ -141,15 +127,8 @@ def stop_detection():
 def video_feed():
     try:
         logger.info("Iniciando stream de vídeo")
-        return Response(
-            video_processor.generate_frames(),
-            mimetype='multipart/x-mixed-replace; boundary=frame',
-            headers={
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            }
-        )
+        return Response(video_processor.generate_frames(),
+                        mimetype='multipart/x-mixed-replace; boundary=frame')
     except Exception as e:
         logger.error(f"Erro na rota de video_feed: {str(e)}")
         return "Erro ao gerar stream de vídeo", 500
@@ -157,8 +136,11 @@ def video_feed():
 @app.route('/get_insights')
 def get_insights():
     try:
-        insights = video_processor.get_business_insights()
-        return jsonify(insights)
+        if not video_processor.is_running:
+            return jsonify({'error': 'Stream não está ativo'}), 400
+        
+        metrics = video_processor.get_metrics()
+        return jsonify(metrics)
     except Exception as e:
         logger.error(f"Erro ao obter insights: {str(e)}")
         return jsonify({'error': str(e)}), 500
