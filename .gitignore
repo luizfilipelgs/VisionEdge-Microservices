@@ -24,6 +24,7 @@ wheels/
 venv/
 ENV/
 env/
+.venv/
 
 # IDE
 .idea/
@@ -55,4 +56,18 @@ events/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Misc
+*.bak
+*.tmp
+*.orig
+
+# Node (caso use frontend avançado)
+node_modules/
+
+# Docker
+*.pid 

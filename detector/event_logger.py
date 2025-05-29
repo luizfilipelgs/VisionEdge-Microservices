@@ -6,8 +6,11 @@ import logging
 from collections import deque
 
 class EventLogger:
-    def __init__(self, log_file='events/events.log'):
-        """Initialize the event logger with a log file path"""
+    def __init__(self, log_file='events/events.log', business_type=None):
+        """Initialize the event logger with a log file path and business type"""
+        self.business_type = business_type or 'default'
+        if business_type:
+            log_file = f'events/events_{business_type}.log'
         self.log_file = log_file
         self.logger = logging.getLogger(__name__)
         self.max_events = 1000  # Número máximo de eventos em memória
@@ -70,7 +73,7 @@ class EventLogger:
             self.logger.error(f"Erro ao carregar eventos existentes: {str(e)}")
 
     def log_event(self, event_type, data, confidence=None, timestamp=None):
-        """Registra um evento de detecção com dados adicionais"""
+        """Registra um evento de detecção com dados adicionais e tipo de negócio como metadado"""
         try:
             if timestamp is None:
                 timestamp = time.time()
@@ -80,7 +83,8 @@ class EventLogger:
                 'timestamp': timestamp,
                 'datetime': datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S'),
                 'type': event_type,
-                'data': data
+                'data': data,
+                'business_type': self.business_type
             }
             
             if confidence is not None:

@@ -12,35 +12,42 @@ Sistema avançado de análise de vídeo em tempo real com detecção de objetos 
   - Arquivos de vídeo
   - Webcams
 
-### 📊 Análise por Tipo de Negócio
+### 🚦 Serviços e Métricas por Tipo de Negócio
+
+A plataforma oferece métricas e serviços reais, baseados nas classes do modelo YOLOv8 (COCO), para cada tipo de negócio:
 
 #### 🏪 Supermercado
 - Contagem de pessoas
-- Monitoramento de carrinhos
-- Taxa de ocupação
+- Contagem de carrinhos de compras
+- Contagem de mochilas (backpack)
+- Contagem de bolsas (handbag)
+- Contagem de celulares (cell phone)
+- Contagem de produtos (banana, maçã, garrafa, etc.)
 - Tempo médio de permanência
-- Análise de fluxo de clientes
+- Densidade por zona (entrada, meio, saída)
 
 #### 💊 Farmácia
 - Contagem de pessoas
-- Tempo de espera
-- Tamanho da fila
-- Número de atendentes
-- Análise de eficiência
+- Contagem de mochilas (backpack)
+- Contagem de bolsas (handbag)
+- Contagem de cadeiras (chair)
+- Contagem de medicamentos (garrafa, copo, tigela)
+- Tempo médio de permanência
+- Densidade por zona
 
 #### 🏢 Condomínio
-- Controle de acesso
-- Monitoramento de veículos
-- Contagem de entradas/saídas
-- Alertas de segurança
-- Análise de tráfego
+- Contagem de pessoas
+- Contagem de carros, bicicletas, motos, caminhões
+- Contagem de cachorros (dog) e gatos (cat)
+- Contagem de mochilas (backpack)
+- Tempo médio de permanência
+- Densidade por zona
 
-### 💻 Interface Web
-- Design responsivo e moderno
-- Visualização em tempo real
-- Métricas dinâmicas
-- Recomendações inteligentes
-- Exportação de relatórios
+### 💻 Interface Web Moderna
+
+- As métricas de cada tipo de negócio são exibidas em **abas separadas** e modernas.
+- A navegação entre abas é instantânea e responsiva.
+- As métricas são atualizadas em tempo real conforme o tipo de negócio selecionado.
 
 ## 🚀 Requisitos do Sistema
 
@@ -55,8 +62,6 @@ Sistema avançado de análise de vídeo em tempo real com detecção de objetos 
 - CUDA Toolkit 11.0+ (para GPU)
 - Sistema operacional: Windows 10/11, Linux ou macOS
 - Navegador web moderno (Chrome, Firefox, Edge)
-
-
 
 ## 🚀 Como Rodar a Aplicação
 
@@ -167,6 +172,30 @@ http://localhost:5000
 - Clique em "Iniciar Detecção"
 - Monitore as métricas em tempo real
 - Acompanhe as recomendações
+
+## 📝 Eventos e Logs
+
+- **Eventos de detecção** são salvos em arquivos separados por tipo de negócio, na pasta `events/`.
+- Cada evento inclui metadados como timestamp, tipo de negócio, tipo de objeto detectado e confiança.
+
+## 🛡️ Segurança e .gitignore
+
+- O projeto já inclui um `.gitignore` robusto, protegendo arquivos sensíveis, modelos, uploads, logs, ambientes virtuais e arquivos temporários.
+
+## 🧪 Ambiente Virtual (venv) Recomendado
+
+```bash
+python -m venv venv
+venv\\Scripts\\activate  # Windows
+# ou
+source venv/bin/activate  # Linux/Mac
+pip install -r requirements.txt
+```
+
+## 📦 Modelo YOLOv8
+
+- O arquivo `yolov8n.pt` deve estar na raiz do projeto.
+- Baixe do repositório oficial da Ultralytics se necessário.
 
 ## 📁 Estrutura do Projeto
 

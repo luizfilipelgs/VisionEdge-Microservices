@@ -1,10 +1,11 @@
-flask~=3.1           # Framework web principal
-opencv-python~=4.11  # Processamento de imagem
-numpy~=2.2           # Cálculos numéricos
-ultralytics~=8.3     # YOLO e visão computacional
-python-dotenv~=1.1   # Variáveis de ambiente
-Werkzeug~=3.1        # Utilitário WSGI (base do Flask)
-Pillow~=11.2         # Manipulação de imagens
-tqdm~=4.67           # Barra de progresso
-torch~=2.7           # PyTorch para IA
-torchvision~=0.22    # Suplementos visuais do PyTorch
+flask==2.0.1
+opencv-python==4.5.3.56
+numpy==1.21.2
+python-dotenv==1.1.0
+scipy==1.7.1
+tqdm==4.67.1
+torch==2.1.0
+torchvision==0.16.0
+ultralytics==8.0.0
+werkzeug==2.0.1
+scikit-image==0.18.3
